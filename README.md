@@ -35,10 +35,20 @@ curl -X POST http://localhost:3000/generate \\
   -d '{\"emoji\":\"📚\",\"title\":\"테스트 글\",\"categories\":\"Backend\"}'
 ```
 
+Storage rule:
+
+- `<WORKSPACE_DIR>/<date>/<categories>/<fileName>.md`
+- `fileName` = normalize(title) + `.md`
+  - lowercase
+  - spaces/underscores -> `-`
+  - remove special characters
+  - collapse multiple `-` and trim edges
+- `slug` is an internal identifier (not the file name), derived from `slug` input or `title-categories`
+
 Example response:
 
 ```json
-{ "slug": "테스트-글", "date": "2025-01-01", "workspaceDir": "/data/workspace/테스트-글", "file": "index.md" }
+{ "slug": "테스트-글-backend", "date": "2025-01-01", "categories": "Backend", "filePath": "/data/workspace/2025-01-01/Backend/테스트-글.md", "fileName": "테스트-글.md" }
 ```
 
 ## Docker

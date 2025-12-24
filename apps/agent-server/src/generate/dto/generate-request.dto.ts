@@ -11,6 +11,9 @@ export class GenerateRequestDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/^(?!.*\.\.)(?!.*[\\/]).+$/, {
+    message: 'categories cannot contain path separators'
+  })
   categories!: string;
 
   @IsOptional()
@@ -22,8 +25,8 @@ export class GenerateRequestDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^\S+$/, {
-    message: 'slug cannot contain spaces'
+  @Matches(/^(?!.*\.\.)(?!.*[\\/]).+$/, {
+    message: 'slug cannot contain path separators'
   })
   slug?: string;
 }

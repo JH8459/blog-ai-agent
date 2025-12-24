@@ -5,32 +5,49 @@ import {
   InternalServerErrorException
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
-import { join } from 'path';
+import { resolve, sep } from 'path';
 import { GenerateRequestDto } from './dto/generate-request.dto';
 import { getTodayDate } from '../utils/date';
-import { slugify } from '../utils/slugify';
+import { hasPathTraversal, normalizeFileName, normalizeSlug } from '../utils/normalize';
 
 interface GenerateResponse {
   slug: string;
   date: string;
-  workspaceDir: string;
-  file: string;
+  categories: string;
+  filePath: string;
+  fileName: string;
 }
 
 @Injectable()
 export class GenerateService {
   async generateDraft(payload: GenerateRequestDto): Promise<GenerateResponse> {
     const date = payload.date ?? getTodayDate();
-    const slugInput = payload.slug && payload.slug.trim().length > 0 ? payload.slug : payload.title;
-    const slug = slugify(slugInput);
+    this.assertSafeInput(payload.title, 'title');
+    this.assertSafeInput(payload.categories, 'categories');
+    if (payload.slug) {
+      this.assertSafeInput(payload.slug, 'slug');
+    }
 
+    const workspaceRoot = process.env.WORKSPACE_DIR || '/data/workspace';
+    const fileNameBase = normalizeFileName(payload.title);
+    if (!fileNameBase) {
+      throw new BadRequestException('fileName could not be generated');
+    }
+    const fileName = `${fileNameBase}.md`;
+
+    const slugSource =
+      payload.slug && payload.slug.trim().length > 0
+        ? payload.slug
+        : `${payload.title}-${payload.categories}`;
+    const slug = normalizeSlug(slugSource);
     if (!slug) {
       throw new BadRequestException('slug could not be generated');
     }
 
-    const workspaceRoot = process.env.WORKSPACE_DIR || '/data/workspace';
-    const workspaceDir = join(workspaceRoot, slug);
-    const filePath = join(workspaceDir, 'index.md');
+    const dirPath = resolve(workspaceRoot, date, payload.categories);
+    const filePath = resolve(workspaceRoot, date, payload.categories, fileName);
+    this.assertWithinWorkspace(workspaceRoot, dirPath);
+    this.assertWithinWorkspace(workspaceRoot, filePath);
     const markdown = this.buildMarkdown({
       emoji: payload.emoji,
       title: payload.title,
@@ -39,22 +56,23 @@ export class GenerateService {
     });
 
     try {
-      await fs.mkdir(workspaceDir, { recursive: true });
+      await fs.mkdir(dirPath, { recursive: true });
       await fs.writeFile(filePath, markdown, { flag: 'wx' });
     } catch (error) {
       const code = (error as NodeJS.ErrnoException | undefined)?.code;
       if (code === 'EEXIST') {
-        throw new ConflictException('index.md already exists');
+        throw new ConflictException('file already exists');
       }
-      const message = error instanceof Error ? error.message : 'failed to create index.md';
+      const message = error instanceof Error ? error.message : 'failed to create markdown file';
       throw new InternalServerErrorException(message);
     }
 
     return {
       slug,
       date,
-      workspaceDir,
-      file: 'index.md'
+      categories: payload.categories,
+      filePath,
+      fileName
     };
   }
 
@@ -83,5 +101,18 @@ export class GenerateService {
       '<!-- TODO: n8n에서 섹션/본문 자동 생성 -->',
       ''
     ].join('\n');
+  }
+
+  private assertSafeInput(value: string, field: string): void {
+    if (hasPathTraversal(value)) {
+      throw new BadRequestException(`${field} contains invalid path characters`);
+    }
+  }
+
+  private assertWithinWorkspace(workspaceRoot: string, targetPath: string): void {
+    const root = resolve(workspaceRoot);
+    if (targetPath !== root && !targetPath.startsWith(root + sep)) {
+      throw new BadRequestException('invalid workspace path');
+    }
   }
 }
