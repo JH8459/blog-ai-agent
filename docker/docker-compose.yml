@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  agent-server:
+    build:
+      context: ..
+      dockerfile: apps/agent-server/Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+    volumes:
+      - ../apps/agent-server/src:/app/apps/agent-server/src
+    working_dir: /app/apps/agent-server
+    command: pnpm dev

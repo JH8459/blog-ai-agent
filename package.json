@@ -1,0 +1,12 @@
+{
+  "name": "blog-ai-agent",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.12.4",
+  "scripts": {
+    "dev": "pnpm --filter agent-server dev",
+    "build": "pnpm --filter agent-server build",
+    "start": "pnpm --filter agent-server start",
+    "lint": "pnpm --filter agent-server lint"
+  }
+}
