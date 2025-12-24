@@ -26,7 +26,7 @@ export class HealthService {
     }
 
     try {
-      const packagePath = join(__dirname, '../../package.json');
+      const packagePath = join(process.cwd(), 'package.json');
       const raw = readFileSync(packagePath, 'utf8');
       const parsed = JSON.parse(raw) as { version?: string };
       return typeof parsed.version === 'string' ? parsed.version : '0.0.0';
