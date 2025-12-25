@@ -14,3 +14,12 @@ services:
       - ../apps/agent-server/src:/app/apps/agent-server/src
     working_dir: /app/apps/agent-server
     command: pnpm dev
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
