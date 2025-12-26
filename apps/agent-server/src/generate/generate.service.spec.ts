@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { GenerateService } from './generate.service';
 
 const basePayload = {
@@ -13,18 +13,18 @@ const basePayload = {
   date: '2025-12-20'
 };
 
-test('generateDraft: 동일 date/categories/title 재요청 시 409', async () => {
+test('generateDraft: 동일 date/categories/title 재요청 시 버전 파일 생성', async () => {
   const prevWorkspace = process.env.WORKSPACE_DIR;
   const workspaceRoot = await mkdtemp(join(tmpdir(), 'agent-server-'));
   process.env.WORKSPACE_DIR = workspaceRoot;
   const service = new GenerateService();
 
   try {
-    await service.generateDraft(basePayload);
-    await assert.rejects(
-      () => service.generateDraft(basePayload),
-      (err) => err instanceof ConflictException
-    );
+    const first = await service.generateDraft(basePayload);
+    const second = await service.generateDraft(basePayload);
+    const baseName = first.fileName.replace(/\.md$/, '');
+    assert.notEqual(second.filePath, first.filePath);
+    assert.equal(second.fileName, `${baseName}_1.md`);
   } finally {
     process.env.WORKSPACE_DIR = prevWorkspace;
     await rm(workspaceRoot, { recursive: true, force: true });

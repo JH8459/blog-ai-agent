@@ -9,6 +9,7 @@ import { resolve, sep } from 'path';
 import { GenerateRequestDto } from './dto/generate-request.dto';
 import { getTodayDate } from '../utils/date';
 import { hasPathTraversal, normalizeFileName, normalizeSlug } from '../utils/normalize';
+import { buildVersionedFileName } from '../utils/versioned-file';
 
 export interface GenerateResponse {
   slug: string;
@@ -33,8 +34,6 @@ export class GenerateService {
     if (!fileNameBase) {
       throw new BadRequestException('fileName could not be generated');
     }
-    const fileName = `${fileNameBase}.md`;
-
     const slugSource =
       payload.slug && payload.slug.trim().length > 0
         ? payload.slug
@@ -45,9 +44,7 @@ export class GenerateService {
     }
 
     const dirPath = resolve(workspaceRoot, date, payload.categories);
-    const filePath = resolve(workspaceRoot, date, payload.categories, fileName);
     this.assertWithinWorkspace(workspaceRoot, dirPath);
-    this.assertWithinWorkspace(workspaceRoot, filePath);
     const markdown = this.buildMarkdown({
       emoji: payload.emoji,
       title: payload.title,
@@ -57,23 +54,37 @@ export class GenerateService {
 
     try {
       await fs.mkdir(dirPath, { recursive: true });
-      await fs.writeFile(filePath, markdown, { flag: 'wx' });
     } catch (error) {
-      const code = (error as NodeJS.ErrnoException | undefined)?.code;
-      if (code === 'EEXIST') {
-        throw new ConflictException('file already exists');
-      }
-      const message = error instanceof Error ? error.message : 'failed to create markdown file';
+      const message = error instanceof Error ? error.message : 'failed to create directory';
       throw new InternalServerErrorException(message);
     }
 
-    return {
-      slug,
-      date,
-      categories: payload.categories,
-      filePath,
-      fileName
-    };
+    const maxAttempts = 1000;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const versionedFileName = buildVersionedFileName(fileNameBase, attempt);
+      const filePath = resolve(dirPath, versionedFileName);
+      this.assertWithinWorkspace(workspaceRoot, filePath);
+
+      try {
+        await fs.writeFile(filePath, markdown, { flag: 'wx' });
+        return {
+          slug,
+          date,
+          categories: payload.categories,
+          filePath,
+          fileName: versionedFileName
+        };
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException | undefined)?.code;
+        if (code === 'EEXIST') {
+          continue;
+        }
+        const message = error instanceof Error ? error.message : 'failed to create markdown file';
+        throw new InternalServerErrorException(message);
+      }
+    }
+
+    throw new ConflictException('file already exists');
   }
 
   private buildMarkdown(input: {

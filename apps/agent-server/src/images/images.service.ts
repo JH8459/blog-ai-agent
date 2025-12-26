@@ -8,6 +8,7 @@ import {
 import { promises as fs } from 'fs';
 import { resolve, sep } from 'path';
 import { hasPathTraversal, normalizeFileName } from '../utils/normalize';
+import { findLatestVersionedFileName } from '../utils/versioned-file';
 import { ImageExtension, ImagesMode, ImagesRequestDto } from './dto/images-request.dto';
 
 const DEFAULT_BASE_URL = 'https://jh8459.s3.ap-northeast-2.amazonaws.com/blog';
@@ -40,9 +41,11 @@ export class ImagesService {
     if (!fileNameBase) {
       throw new BadRequestException('fileName could not be generated');
     }
-    const fileName = `${fileNameBase}.md`;
+    const dirPath = resolve(workspaceRoot, payload.date, payload.categories);
+    this.assertWithinWorkspace(workspaceRoot, dirPath);
 
-    const filePath = resolve(workspaceRoot, payload.date, payload.categories, fileName);
+    const fileName = await this.resolveLatestFileName(dirPath, fileNameBase);
+    const filePath = resolve(dirPath, fileName);
     this.assertWithinWorkspace(workspaceRoot, filePath);
 
     const targets = this.normalizeTargets(payload.targets);
@@ -227,6 +230,22 @@ export class ImagesService {
   private assertSafeInput(value: string, field: string): void {
     if (hasPathTraversal(value)) {
       throw new BadRequestException(`${field} contains invalid path characters`);
+    }
+  }
+
+  private async resolveLatestFileName(dirPath: string, fileNameBase: string): Promise<string> {
+    try {
+      const fileName = await findLatestVersionedFileName(dirPath, fileNameBase);
+      if (!fileName) {
+        throw new NotFoundException('file not found');
+      }
+      return fileName;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : 'failed to read markdown directory';
+      throw new InternalServerErrorException(message);
     }
   }
 
