@@ -10,7 +10,7 @@ import { GenerateRequestDto } from './dto/generate-request.dto';
 import { getTodayDate } from '../utils/date';
 import { hasPathTraversal, normalizeFileName, normalizeSlug } from '../utils/normalize';
 
-interface GenerateResponse {
+export interface GenerateResponse {
   slug: string;
   date: string;
   categories: string;

@@ -12,7 +12,7 @@ import { PatchMode, PatchRequestDto } from './dto/patch-request.dto';
 
 const DEFAULT_PLACEHOLDER = '<!-- TODO: n8n에서 섹션/본문 자동 생성 -->';
 
-interface PatchResponse {
+export interface PatchResponse {
   ok: true;
   filePath: string;
   mode: PatchMode;

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-interface HealthResponse {
+export interface HealthResponse {
   ok: boolean;
   name: string;
   version: string;

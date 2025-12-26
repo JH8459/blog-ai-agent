@@ -13,7 +13,7 @@ import { ImageExtension, ImagesMode, ImagesRequestDto } from './dto/images-reque
 const DEFAULT_BASE_URL = 'https://jh8459.s3.ap-northeast-2.amazonaws.com/blog';
 const DEFAULT_SLOT_PREFIX = 'ILLUSTRATION';
 
-interface ImagesResponse {
+export interface ImagesResponse {
   ok: true;
   filePath: string;
   mode: ImagesMode;
