@@ -10,10 +10,12 @@ services:
       - "3000:3000"
     environment:
       PORT: "3000"
+      WORKSPACE_DIR: "/data/workspace"
     volumes:
       - ../apps/agent-server/src:/app/apps/agent-server/src
+      - ../workspace:/data/workspace
     working_dir: /app/apps/agent-server
-    command: pnpm dev
+    command: sh -c "pnpm build && pnpm build -- --watch & node --watch dist/main.js"
   n8n:
     image: n8nio/n8n:latest
     ports:
