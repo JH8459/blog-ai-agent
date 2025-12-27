@@ -32,7 +32,7 @@ Generate draft:
 ```bash
 curl -X POST http://localhost:3000/generate \\
   -H 'Content-Type: application/json' \\
-  -d '{\"emoji\":\"📚\",\"title\":\"테스트 글\",\"categories\":\"Backend\",\"brief\":\"대상 독자, 핵심 메시지, 논점을 포함한 brief를 입력합니다.\"}'
+  -d '{\"emoji\":\"📚\",\"title\":\"테스트 글\",\"categories\":\"Backend\",\"brief\":\"대상 독자, 핵심 메시지, 논점을 포함한 brief를 입력합니다.\",\"outline\":[\"문제 제기\",\"해결 전략\",\"적용 사례\"]}'
 ```
 
 Patch generated body (replaces the placeholder or appends to the end):
@@ -104,13 +104,21 @@ Storage rule:
 Example response:
 
 ```json
-{ "slug": "테스트-글-backend", "date": "2025-01-01", "categories": "Backend", "filePath": "/data/workspace/2025-01-01/Backend/테스트-글.md", "fileName": "테스트-글.md" }
+{
+  "slug": "테스트-글-backend",
+  "date": "2025-01-01",
+  "categories": "Backend",
+  "filePath": "/data/workspace/2025-01-01/Backend/테스트-글.md",
+  "fileName": "테스트-글.md",
+  "brief": "대상 독자, 핵심 메시지, 논점을 포함한 brief를 입력합니다.",
+  "outline": ["문제 제기", "해결 전략", "적용 사례"]
+}
 ```
 
 Generate → Patch flow:
 
 - `/generate` creates the Markdown skeleton with a placeholder `<!-- TODO: n8n에서 섹션/본문 자동 생성 -->`.
-- `/generate` stores the brief in a comment block (`<!-- AI_BRIEF_START ... AI_BRIEF_END -->`) near the top of the body.
+- `/generate` stores the brief and outline in comment blocks (`<!-- AI_BRIEF_START ... -->`, `<!-- AI_OUTLINE_START ... -->`) near the top of the body.
 - `/patch` locates the same file via `date/categories/title`, then replaces that placeholder by default or appends content when `mode` is `append`.
 - `/images` updates image slots and (optionally) frontmatter thumbnail, or returns URL mappings when `mode` is `noPatch`.
 
