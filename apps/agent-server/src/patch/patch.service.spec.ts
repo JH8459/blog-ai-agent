@@ -12,6 +12,7 @@ const baseGeneratePayload = {
   emoji: '📚',
   title: 'Patch 테스트 글',
   brief: '대상 독자와 핵심 메시지, 논점을 포함한 테스트 brief입니다.',
+  outline: ['문제 제기', '해결 전략', '적용 사례'],
   categories: 'Backend',
   date: '2025-12-24'
 };

@@ -17,6 +17,8 @@ export interface GenerateResponse {
   categories: string;
   filePath: string;
   fileName: string;
+  brief: string;
+  outline: string[];
 }
 
 @Injectable()
@@ -50,7 +52,8 @@ export class GenerateService {
       title: payload.title,
       date,
       categories: payload.categories,
-      brief: payload.brief
+      brief: payload.brief,
+      outline: payload.outline
     });
 
     try {
@@ -73,7 +76,9 @@ export class GenerateService {
           date,
           categories: payload.categories,
           filePath,
-          fileName: versionedFileName
+          fileName: versionedFileName,
+          brief: payload.brief,
+          outline: payload.outline
         };
       } catch (error) {
         const code = (error as NodeJS.ErrnoException | undefined)?.code;
@@ -94,8 +99,9 @@ export class GenerateService {
     date: string;
     categories: string;
     brief: string;
+    outline: string[];
   }): string {
-    const { emoji, title, date, categories, brief } = input;
+    const { emoji, title, date, categories, brief, outline } = input;
 
     return [
       '---',
@@ -110,6 +116,10 @@ export class GenerateService {
       '<!-- AI_BRIEF_START',
       brief,
       'AI_BRIEF_END -->',
+      '',
+      '<!-- AI_OUTLINE_START',
+      ...outline,
+      'AI_OUTLINE_END -->',
       '',
       `<img src="https://jh8459.s3.ap-northeast-2.amazonaws.com/blog/${date}/${categories}/banner.png"/>`,
       '',
