@@ -32,7 +32,7 @@ test('patchPost: placeholder replace success', async () => {
     const response = await patchService.patchPost({
       date: baseGeneratePayload.date,
       categories: baseGeneratePayload.categories,
-      title: baseGeneratePayload.title,
+      fileName: generateResult.fileName,
       bodyMarkdown
     });
 
@@ -57,11 +57,11 @@ test('patchPost: placeholder missing returns 409 Conflict', async () => {
   const patchService = new PatchService();
 
   try {
-    await generateService.generateDraft(baseGeneratePayload);
+    const generated = await generateService.generateDraft(baseGeneratePayload);
     await patchService.patchPost({
       date: baseGeneratePayload.date,
       categories: baseGeneratePayload.categories,
-      title: baseGeneratePayload.title,
+      fileName: generated.fileName,
       bodyMarkdown
     });
 
@@ -70,7 +70,7 @@ test('patchPost: placeholder missing returns 409 Conflict', async () => {
         patchService.patchPost({
           date: baseGeneratePayload.date,
           categories: baseGeneratePayload.categories,
-          title: baseGeneratePayload.title,
+          fileName: generated.fileName,
           bodyMarkdown
         }),
       (err) => err instanceof ConflictException
@@ -93,7 +93,7 @@ test('patchPost: path traversal input is blocked', async () => {
         patchService.patchPost({
           date: '../2025-12-24',
           categories: 'Backend',
-          title: 'Patch 테스트 글',
+          fileName: 'patch-테스트-글.md',
           bodyMarkdown
         }),
       (err) => err instanceof BadRequestException

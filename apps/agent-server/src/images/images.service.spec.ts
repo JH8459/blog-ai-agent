@@ -72,7 +72,7 @@ test('applyImages: replaceSlots replaces slots with image tags', async () => {
     await patchService.patchPost({
       date: baseGeneratePayload.date,
       categories: baseGeneratePayload.categories,
-      title: baseGeneratePayload.title,
+      fileName: generateResult.fileName,
       bodyMarkdown: '## 본문\n\n<!-- ILLUSTRATION: flow -->\n'
     });
 
@@ -104,10 +104,11 @@ test('applyImages: replaceSlots returns 409 when slot missing', async () => {
 
   try {
     await generateService.generateDraft(baseGeneratePayload);
+    const generateResult = await generateService.generateDraft(baseGeneratePayload);
     await patchService.patchPost({
       date: baseGeneratePayload.date,
       categories: baseGeneratePayload.categories,
-      title: baseGeneratePayload.title,
+      fileName: generateResult.fileName,
       bodyMarkdown: '## 본문\n\n본문 내용입니다.\n'
     });
 

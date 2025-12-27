@@ -23,9 +23,9 @@ export class PatchRequestDto {
   @IsString()
   @IsNotEmpty()
   @Matches(/^(?!.*\.\.)(?!.*[\\/]).+$/, {
-    message: 'title cannot contain path separators'
+    message: 'fileName cannot contain path separators'
   })
-  title!: string;
+  fileName!: string;
 
   @IsString()
   @IsNotEmpty()

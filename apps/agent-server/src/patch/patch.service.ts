@@ -7,8 +7,7 @@ import {
 } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import { resolve, sep } from 'path';
-import { hasPathTraversal, normalizeFileName } from '../utils/normalize';
-import { findLatestVersionedFileName } from '../utils/versioned-file';
+import { hasPathTraversal } from '../utils/normalize';
 import { PatchMode, PatchRequestDto } from './dto/patch-request.dto';
 
 const DEFAULT_PLACEHOLDER = '<!-- TODO: n8n에서 섹션/본문 자동 생성 -->';
@@ -25,7 +24,7 @@ export class PatchService {
   async patchPost(payload: PatchRequestDto): Promise<PatchResponse> {
     this.assertSafeInput(payload.date, 'date');
     this.assertSafeInput(payload.categories, 'categories');
-    this.assertSafeInput(payload.title, 'title');
+    this.assertSafeInput(payload.fileName, 'fileName');
 
     if (!payload.bodyMarkdown || payload.bodyMarkdown.trim().length === 0) {
       throw new BadRequestException('bodyMarkdown must not be empty');
@@ -35,15 +34,12 @@ export class PatchService {
     const placeholder = payload.placeholder ?? DEFAULT_PLACEHOLDER;
     const mode = payload.mode ?? PatchMode.ReplacePlaceholder;
 
-    const fileNameBase = normalizeFileName(payload.title);
-    if (!fileNameBase) {
-      throw new BadRequestException('fileName could not be generated');
-    }
     const dirPath = resolve(workspaceRoot, payload.date, payload.categories);
     this.assertWithinWorkspace(workspaceRoot, dirPath);
 
-    const fileName = await this.resolveLatestFileName(dirPath, fileNameBase);
-    const filePath = resolve(dirPath, fileName);
+    const normalizedFileName =
+      payload.fileName.endsWith('.md') ? payload.fileName : `${payload.fileName}.md`;
+    const filePath = resolve(dirPath, normalizedFileName);
     this.assertWithinWorkspace(workspaceRoot, filePath);
 
     let content: string;
@@ -87,22 +83,6 @@ export class PatchService {
 
   private appendBody(content: string, bodyMarkdown: string): string {
     return `${content}\n\n${bodyMarkdown}`;
-  }
-
-  private async resolveLatestFileName(dirPath: string, fileNameBase: string): Promise<string> {
-    try {
-      const fileName = await findLatestVersionedFileName(dirPath, fileNameBase);
-      if (!fileName) {
-        throw new NotFoundException('file not found');
-      }
-      return fileName;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      const message = error instanceof Error ? error.message : 'failed to read markdown directory';
-      throw new InternalServerErrorException(message);
-    }
   }
 
   private assertSafeInput(value: string, field: string): void {
