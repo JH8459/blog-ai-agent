@@ -91,6 +91,29 @@ Modes:
 - `insertSlots`: inserts missing banners at the top and appends other images to the end.
 - `noPatch`: returns URL mappings only (no file changes).
 
+Push git changes (commit and push):
+
+```bash
+curl -X POST http://localhost:3000/git/push \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "branchPrefix": "draft",
+    "commitMessage": "docs: add blog draft (2025-12-27 Backend)",
+    "paths": ["2025-12-27/Backend/n8n-테스트-글_2.md"]
+  }'
+```
+
+Example response:
+
+```json
+{
+  "branch": "draft/20251227094512-n8n-테스트-글_2",
+  "pushed": true,
+  "commitSha": "abc123def456",
+  "changedFiles": ["2025-12-27/Backend/n8n-테스트-글_2.md"]
+}
+```
+
 Storage rule:
 
 - `<WORKSPACE_DIR>/<date>/<categories>/<fileName>.md`
@@ -121,6 +144,7 @@ Generate → Patch flow:
 - `/generate` stores the brief and outline in comment blocks (`<!-- AI_BRIEF_START ... -->`, `<!-- AI_OUTLINE_START ... -->`) near the top of the body.
 - `/patch` locates the same file via `date/categories/fileName`, then replaces that placeholder by default or appends content when `mode` is `append`.
 - `/images` updates image slots and (optionally) frontmatter thumbnail, or returns URL mappings when `mode` is `noPatch`.
+- `/git/push` commits and pushes changes for the provided paths and returns `pushed: false` if there are no changes.
 
 ## Docker
 
@@ -134,6 +158,7 @@ docker compose -f docker/docker-compose.yml up --build
 - `PORT` defaults to `3000`
 - `WORKSPACE_DIR` defaults to `/data/workspace`
 - `IMAGE_BASE_URL` defaults to `https://jh8459.s3.ap-northeast-2.amazonaws.com/blog`
+- `GIT_REPO_ROOT` defaults to auto-detecting the nearest `.git` directory
 
 ## Roadmap (next steps)
 
