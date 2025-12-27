@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 export class GenerateRequestDto {
   @IsString()
@@ -8,6 +8,13 @@ export class GenerateRequestDto {
   @IsString()
   @IsNotEmpty()
   title!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(30, {
+    message: 'brief must be at least 30 characters'
+  })
+  brief!: string;
 
   @IsString()
   @IsNotEmpty()

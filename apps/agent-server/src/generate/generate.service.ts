@@ -49,7 +49,8 @@ export class GenerateService {
       emoji: payload.emoji,
       title: payload.title,
       date,
-      categories: payload.categories
+      categories: payload.categories,
+      brief: payload.brief
     });
 
     try {
@@ -92,8 +93,9 @@ export class GenerateService {
     title: string;
     date: string;
     categories: string;
+    brief: string;
   }): string {
-    const { emoji, title, date, categories } = input;
+    const { emoji, title, date, categories, brief } = input;
 
     return [
       '---',
@@ -104,6 +106,10 @@ export class GenerateService {
       `categories: ${categories}`,
       `thumbnail: https://jh8459.s3.ap-northeast-2.amazonaws.com/blog/${date}/${categories}/thumbnail.png`,
       '---',
+      '',
+      '<!-- AI_BRIEF_START',
+      brief,
+      'AI_BRIEF_END -->',
       '',
       `<img src="https://jh8459.s3.ap-northeast-2.amazonaws.com/blog/${date}/${categories}/banner.png"/>`,
       '',

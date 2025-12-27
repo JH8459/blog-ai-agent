@@ -9,6 +9,7 @@ import { GenerateService } from './generate.service';
 const basePayload = {
   emoji: '📚',
   title: 'NestJS Kafka emit(), 어디까지 성공했다고 말할 수 있을까?',
+  brief: '대상 독자와 핵심 메시지, 논점을 포함한 테스트 brief입니다.',
   categories: 'Backend',
   date: '2025-12-20'
 };
