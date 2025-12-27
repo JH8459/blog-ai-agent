@@ -123,8 +123,6 @@ export class GenerateService {
       '',
       `<img src="https://jh8459.s3.ap-northeast-2.amazonaws.com/blog/${date}/${categories}/banner.png"/>`,
       '',
-      `## ${emoji} Overview`,
-      '',
       '<!-- TODO: n8n에서 섹션/본문 자동 생성 -->',
       ''
     ].join('\n');
