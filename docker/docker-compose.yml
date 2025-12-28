@@ -10,10 +10,11 @@ services:
       - "3000:3000"
     environment:
       PORT: "3000"
-      WORKSPACE_DIR: "/data/workspace"
+      WORKSPACE_DIR: "/repo/workspace"
+      GIT_REPO_ROOT: "/repo"
     volumes:
       - ../apps/agent-server/src:/app/apps/agent-server/src
-      - ../workspace:/data/workspace
+      - ..:/repo
     working_dir: /app/apps/agent-server
     command: sh -c "pnpm build && pnpm build -- --watch & node --watch dist/main.js"
   n8n:
