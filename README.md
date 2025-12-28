@@ -114,6 +114,12 @@ Example response:
 }
 ```
 
+Notes:
+
+- Set `GIT_USER_NAME` + `GIT_USER_EMAIL` (or configure `git config user.name/user.email`) for commit identity.
+- If `GIT_TOKEN` is set, pushes use HTTPS with `https://<username>:<token>@...` (default `GIT_HTTPS_USERNAME=x-access-token`).
+- If `GIT_TOKEN` is empty, pushes use the existing `origin` remote.
+
 Storage rule:
 
 - `<WORKSPACE_DIR>/<date>/<categories>/<fileName>.md`
@@ -159,6 +165,9 @@ docker compose -f docker/docker-compose.yml up --build
 - `WORKSPACE_DIR` defaults to `/data/workspace`
 - `IMAGE_BASE_URL` defaults to `https://jh8459.s3.ap-northeast-2.amazonaws.com/blog`
 - `GIT_REPO_ROOT` defaults to auto-detecting the nearest `.git` directory
+- `GIT_TOKEN` enables HTTPS token-based pushes (optional)
+- `GIT_HTTPS_USERNAME` defaults to `x-access-token` when using `GIT_TOKEN`
+- `GIT_USER_NAME` and `GIT_USER_EMAIL` set git commit identity (or configure git)
 
 ## Roadmap (next steps)
 

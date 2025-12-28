@@ -61,9 +61,14 @@ export class GitService {
       };
     }
 
-    await this.runGitLogged(['commit', '-m', payload.commitMessage], repoRoot);
+    const identity = await this.resolveCommitIdentity(repoRoot);
+    await this.runGitLogged(
+      ['-c', `user.name=${identity.name}`, '-c', `user.email=${identity.email}`, 'commit', '-m', payload.commitMessage],
+      repoRoot
+    );
     const commitSha = (await this.runGitLogged(['rev-parse', 'HEAD'], repoRoot)).stdout;
-    await this.runGitLogged(['push', '-u', 'origin', branch], repoRoot);
+    const pushArgs = await this.buildPushArgs(repoRoot, branch);
+    await this.runGitLogged(pushArgs, repoRoot);
 
     return {
       branch,
@@ -182,24 +187,99 @@ export class GitService {
   }
 
   private async runGitLogged(args: string[], cwd: string): Promise<{ stdout: string; stderr: string }> {
+    const safeArgs = this.maskArgs(args);
     try {
       const result = await runGit(args, cwd);
       if (result.stdout) {
-        this.logger.debug(`[git] ${args.join(' ')}: ${result.stdout}`);
+        this.logger.debug(`[git] ${safeArgs.join(' ')}: ${result.stdout}`);
       }
       if (result.stderr) {
-        this.logger.warn(`[git] ${args.join(' ')} stderr: ${result.stderr}`);
+        this.logger.warn(`[git] ${safeArgs.join(' ')} stderr: ${result.stderr}`);
       }
       return result;
     } catch (error) {
       if (error instanceof GitCommandError) {
         this.logger.error(
-          `[git] ${args.join(' ')} failed: ${error.stderr || error.stdout || error.message}`
+          `[git] ${safeArgs.join(' ')} failed: ${error.stderr || error.stdout || error.message}`
         );
       } else if (error instanceof Error) {
-        this.logger.error(`[git] ${args.join(' ')} failed: ${error.message}`);
+        this.logger.error(`[git] ${safeArgs.join(' ')} failed: ${error.message}`);
       }
       throw new InternalServerErrorException('git command failed');
     }
+  }
+
+  private async resolveCommitIdentity(repoRoot: string): Promise<{ name: string; email: string }> {
+    const envName = process.env.GIT_USER_NAME?.trim();
+    const envEmail = process.env.GIT_USER_EMAIL?.trim();
+    if (envName && envEmail) {
+      return { name: envName, email: envEmail };
+    }
+
+    let name = '';
+    let email = '';
+    try {
+      name = (await runGit(['config', '--get', 'user.name'], repoRoot)).stdout;
+    } catch (error) {
+      name = '';
+    }
+    try {
+      email = (await runGit(['config', '--get', 'user.email'], repoRoot)).stdout;
+    } catch (error) {
+      email = '';
+    }
+    if (!name || !email) {
+      throw new BadRequestException('git user.name and user.email must be configured');
+    }
+
+    return { name, email };
+  }
+
+  private async buildPushArgs(repoRoot: string, branch: string): Promise<string[]> {
+    const token = process.env.GIT_TOKEN?.trim();
+    if (!token) {
+      return ['push', '-u', 'origin', branch];
+    }
+
+    const username = process.env.GIT_HTTPS_USERNAME?.trim() || 'x-access-token';
+    const originUrl = (await this.runGitLogged(['config', '--get', 'remote.origin.url'], repoRoot))
+      .stdout;
+    if (!originUrl) {
+      throw new BadRequestException('remote.origin.url not found');
+    }
+
+    const remoteUrl = this.buildAuthenticatedRemoteUrl(originUrl, username, token);
+    return ['push', '-u', remoteUrl, branch];
+  }
+
+  private buildAuthenticatedRemoteUrl(originUrl: string, username: string, token: string): string {
+    if (originUrl.startsWith('http://') || originUrl.startsWith('https://')) {
+      const url = new URL(originUrl);
+      return `https://${encodeURIComponent(username)}:${encodeURIComponent(token)}@${url.host}${url.pathname}`;
+    }
+
+    const sshMatch = originUrl.match(/^git@([^:]+):(.+)$/);
+    if (sshMatch) {
+      const host = sshMatch[1];
+      const path = sshMatch[2];
+      return `https://${encodeURIComponent(username)}:${encodeURIComponent(token)}@${host}/${path}`;
+    }
+
+    const sshUrlMatch = originUrl.match(/^ssh:\/\/([^@]+@)?([^/]+)\/(.+)$/);
+    if (sshUrlMatch) {
+      const host = sshUrlMatch[2];
+      const path = sshUrlMatch[3];
+      return `https://${encodeURIComponent(username)}:${encodeURIComponent(token)}@${host}/${path}`;
+    }
+
+    throw new BadRequestException('unsupported remote.origin.url format');
+  }
+
+  private maskArgs(args: string[]): string[] {
+    const token = process.env.GIT_TOKEN;
+    if (!token) {
+      return args;
+    }
+    return args.map((arg) => arg.replace(token, '***'));
   }
 }

@@ -1,6 +1,7 @@
 FROM node:20-alpine AS base
 
 RUN apk add --no-cache git openssh-client
+RUN git config --global --add safe.directory /repo
 RUN corepack enable
 WORKDIR /app
 
@@ -25,6 +26,7 @@ RUN pnpm --filter agent-server build
 FROM node:20-alpine AS runner
 
 RUN apk add --no-cache git openssh-client
+RUN git config --global --add safe.directory /repo
 RUN corepack enable
 WORKDIR /app
 

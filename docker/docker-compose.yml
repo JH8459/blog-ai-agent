@@ -8,6 +8,8 @@ services:
       target: dev
     ports:
       - "3000:3000"
+    env_file:
+      - ../apps/agent-server/.env
     environment:
       PORT: "3000"
       WORKSPACE_DIR: "/repo/workspace"
